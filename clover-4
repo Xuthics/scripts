@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# 拉取 Docker 镜像
+docker pull xuthics/clover-trader:latest
+
+# 检查 config 目录是否存在，如果存在则移动到 config/clover-trader-1
+if [ -d "config" ]; then
+    echo "检测到现有的 config 目录，正在将其移动到 config/clover-trader-1..."
+    mkdir -p config/clover-trader-1
+    mv config/* config/clover-trader-1/ 2>/dev/null
+fi
+
+# 创建配置目录和密钥目录
+for i in {1..4}; do
+    mkdir -p config/clover-trader-$i
+    mkdir -p keys/clover-trader-$i
+done
+
+# 停止并删除现有的容器
+docker stop clover-trader-{1..4} watchtower 2>/dev/null
+docker rm -f clover-trader-{1..4} watchtower 2>/dev/null
+
+# 运行4个独立的 clover-trader 容器
+for i in {1..4}; do
+    docker run --name clover-trader-$i --restart unless-stopped \
+        -v $(pwd)/config/clover-trader-$i:/app/config \
+        -v $(pwd)/keys/clover-trader-$i:/app/keys \
+        -d xuthics/clover-trader:latest
+done
+
+# 启动自动更新服务，监控所有 clover-trader 容器
+docker run -d --name watchtower --restart unless-stopped \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    containrrr/watchtower clover-trader-1 clover-trader-2 clover-trader-3 clover-trader-4 \
+    --interval 1800 --cleanup
+
+echo "4个 Clover Trader 容器已成功安装并运行。"
+
+# 打开第一个容器的日志（可以根据需要修改为其他容器）
+docker logs -f clover-trader-1
+docker logs -f clover-trader-2
+docker logs -f clover-trader-3
+docker logs -f clover-trader-4
