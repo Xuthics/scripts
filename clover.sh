@@ -10,6 +10,7 @@ mkdir -p keys
 docker stop clover-trader
 docker stop watchtower
 docker rm -f clover-trader 2>/dev/null
+docker rm -f watchtower 2>/dev/null
 # 运行 Docker 容器，并设置自动重启和容器名称
 docker run --name clover-trader --restart unless-stopped -v $(pwd)/config:/app/config -v $(pwd)/keys:/app/keys -d xuthics/clover-trader:latest
 # 启动自动更新服务
